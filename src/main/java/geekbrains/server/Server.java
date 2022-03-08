@@ -71,12 +71,11 @@ public class Server {
     }
 
 
-    public synchronized void privateMessage(String username, String message) {
-        for(ClientHandler handler: connectedUsers) {
-            if(handler.getNickName().equals(username)){
-                handler.sendMessage( username + ": " + message);
-            }
-
+    public String getClient(){
+        StringBuilder builder = new StringBuilder("/clients ");
+        for( ClientHandler user: connectedUsers){
+            builder.append(user.getNickName()).append("\n");
         }
+        return builder.toString();
     }
 }

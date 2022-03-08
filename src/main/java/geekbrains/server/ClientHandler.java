@@ -28,13 +28,10 @@ public class ClientHandler {
                 public void run() {
                     try {
                         authentication();
-
-
                         readMessages();
+
                     } catch (IOException exception) {
                         exception.printStackTrace();
-                    } finally {
-                        closeConnection();
                     }
                 }
             }).start();
@@ -46,24 +43,30 @@ public class ClientHandler {
     public void authentication() throws IOException {
         while (true) {
             String message = inputStream.readUTF();
-            if (message.startsWith(ServerCommandConstants.AUTHORIZATION)) {
+            if (message.startsWith(ServerCommandConstants.IDENTIFICATION)) {
                 String[] authInfo = message.split(" ");
                 String nickName = server.getAuthService().getNickNameByLoginAndPassword(authInfo[1], authInfo[2]);
                 if (nickName != null) {
                     if (!server.isNickNameBusy(nickName)) {
-                        sendMessage("/auth ok " + nickName);
+                      sendAuthentificationMess(true);
                         this.nickName = nickName;
                         server.broadcastMessage(nickName + " зашел в чат");
+                        sendMessage(server.getClient());
                         server.addConnectedUser(this);
                         return;
                     } else {
-                        sendMessage("Учетная запись уже используется");
+                        sendAuthentificationMess(false);
                     }
                 } else {
                     sendMessage("Неверные логин или пароль");
+                    sendAuthentificationMess(false);
                 }
             }
         }
+    }
+
+    private void sendAuthentificationMess(boolean authenticated) throws IOException{
+        outputStream.writeBoolean(authenticated);
     }
 
     private void readMessages() throws IOException {
@@ -77,7 +80,8 @@ public class ClientHandler {
                     outputStream.writeUTF(w[0] + w[1] + w[2]);
                 }
             } else System.out.println(messageInChat);
-            if (messageInChat.equals(ServerCommandConstants.SHUTDOWN)) {
+            if (messageInChat.equals(ServerCommandConstants.EXIT)) {
+                closeConnection();
                 return;
             }
             server.broadcastMessage(nickName + ": " + messageInChat);
@@ -95,7 +99,7 @@ public class ClientHandler {
 
     private void closeConnection() {
         server.disconnectUser(this);
-        server.broadcastMessage(nickName + " вышел из чата");
+        server.broadcastMessage(ServerCommandConstants.EXIT + " " + nickName);
         try {
             outputStream.close();
             inputStream.close();

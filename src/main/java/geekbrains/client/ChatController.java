@@ -1,5 +1,6 @@
 package geekbrains.client;
 
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -25,14 +26,15 @@ public class ChatController implements Initializable {
     @FXML
     private ListView<String> clientList;
 
-    private Client client;
+    private final Client client;
 
 
-    public ChatController(){
+    public ChatController() {
         this.client = new Client(this);
+
     }
 
-    public void setAuthen(boolean authen){
+    public void setAuthen(boolean authen) {
         authPanel.setVisible(!authen);
         authPanel.setManaged(!authen);
         messagePanel.setVisible(authen);
@@ -44,17 +46,53 @@ public class ChatController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        setAuthen(false);
+    }
 
+    public void displayMess(String text) {
+        if (textArea.getText().isEmpty()) {
+            textArea.setText(text);
+        } else {
+            textArea.setText(textArea.getText() + "\n" + text);
+        }
+    }
+
+    public void displayClient(final String nickName) {
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                clientList.getItems().add(nickName);
+            }
+        });
+    }
+
+    public void removeClient(final String nickName){
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                clientList.getItems().remove(nickName);
+            }
+        });
     }
 
 
     public void sendAuth(ActionEvent actionEvent) {
+        boolean authen = client.sendAuth(loginField.getText(), passwordField.getText());
+        if (authen){
+            loginField.clear();
+            passwordField.clear();
+            setAuthen(true);
+
+        }
 
     }
 
     public void sendMessage(ActionEvent actionEvent) {
-
+    client.sendMessage(messageField.getText());
     }
 
+    public void close(){
+        client.closeConnection();
+    }
 
 }
